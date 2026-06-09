@@ -1,0 +1,35 @@
+{
+  "realm": "quarkus",
+  "enabled": true,
+  "users": [
+    {
+      "username": "alice",
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "alice" }],
+      "realmRoles": ["user", "admin"]
+    },
+    {
+      "username": "bob",
+      "enabled": true,
+      "credentials": [{ "type": "password", "value": "bob" }],
+      "realmRoles": ["user"]
+    }
+  ],
+  "roles": {
+    "realm": [
+      { "name": "user" },
+      { "name": "admin" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "quarkus-app",
+      "enabled": true,
+      "publicClient": true,
+      "directAccessGrantsEnabled": true,
+      "redirectUris": ["*"],
+      "webOrigins": ["*"],
+      "defaultClientScopes": ["microprofile-jwt"]
+    }
+  ]
+}
