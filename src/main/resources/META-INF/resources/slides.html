@@ -386,6 +386,33 @@ JsonRPCClient.configure({ token: 'Bearer my-jwt' });</code></pre>
                 </p>
             </section>
 
+            <!-- Future extensions -->
+            <section>
+                <h2>Where Else?</h2>
+                <p style="font-size:0.7em;color:#666">Other extensions that could benefit from JS client generation</p>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;text-align:left;font-size:0.65em;margin-top:16px">
+                    <div style="background:#f8f9fa;border-radius:8px;padding:16px">
+                        <div style="font-weight:600;font-size:1.2em;margin-bottom:12px">Quarkus Core</div>
+                        <div style="margin-bottom:8px"><strong>WebSockets Next</strong> &mdash; typed send/receive handlers from <code>@OnTextMessage</code> annotations</div>
+                        <div style="margin-bottom:8px"><strong>gRPC-Web</strong> &mdash; generate JS stubs from protobuf service definitions via gRPC-Web protocol</div>
+                        <div style="margin-bottom:8px"><strong>SSE (Server-Sent Events)</strong> &mdash; typed EventSource wrappers from <code>@SseElementType</code> endpoints</div>
+                        <div style="margin-bottom:8px"><strong>Reactive Messaging</strong> &mdash; WebSocket bridge for Kafka/AMQP/MQTT topics with typed subscribe/publish</div>
+                        <div><strong>Scheduler</strong> &mdash; JS client to trigger, pause, and monitor scheduled jobs</div>
+                    </div>
+                    <div style="background:#f8f9fa;border-radius:8px;padding:16px">
+                        <div style="font-weight:600;font-size:1.2em;margin-bottom:12px">Quarkiverse</div>
+                        <div style="margin-bottom:8px"><strong>Quinoa</strong> &mdash; share import maps between Quinoa frontend and Quarkus backend</div>
+                        <div style="margin-bottom:8px"><strong>Web Bundler</strong> &mdash; consume <code>WebDependencyJarBuildItem</code> import mappings at bundle time</div>
+                        <div style="margin-bottom:8px"><strong>Renarde</strong> &mdash; typed fetch calls from Renarde controller routes</div>
+                        <div style="margin-bottom:8px"><strong>Qute Web</strong> &mdash; typed client for Qute template endpoints and form submissions</div>
+                        <div><strong>Any <code>@JsonRPCApi</code></strong> &mdash; DevUI extensions already use JSON-RPC; expose the same to the app frontend</div>
+                    </div>
+                </div>
+                <p style="font-size:0.6em;color:#999;margin-top:16px">
+                    The pattern is the same: scan at build time, generate JS, produce <code>WebDependencyJarBuildItem</code>
+                </p>
+            </section>
+
         </div>
     </div>
 
