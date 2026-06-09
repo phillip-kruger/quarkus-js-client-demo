@@ -1,4 +1,9 @@
 import {LitElement, html, css} from 'lit';
+import '@vaadin/text-field';
+import '@vaadin/button';
+import '@vaadin/checkbox';
+import '@vaadin/icon';
+import '@vaadin/icons';
 import {client, TaskJsonRpc} from '@quarkiverse/json-rpc-api';
 
 class TaskJsonrpc extends LitElement {
@@ -10,21 +15,6 @@ class TaskJsonrpc extends LitElement {
 
     static styles = css`
         :host { display: block; }
-        .add-form { display: flex; gap: 6px; margin-bottom: 12px; }
-        .add-form input {
-            flex: 1; padding: 6px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.85rem;
-        }
-        button { padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight: 500; }
-        .btn-add { background: #7b1fa2; color: white; }
-        .btn-add:hover { background: #6a1b9a; }
-        .task-list { list-style: none; padding: 0; margin: 0; }
-        .task-item {
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 8px; border-bottom: 1px solid #f0f0f0; font-size: 0.85rem;
-        }
-        .task-item.completed .task-title { text-decoration: line-through; color: #999; }
-        .task-title { flex: 1; cursor: pointer; }
-        .btn-delete { padding: 2px 8px; font-size: 0.7rem; background: #ffebee; color: #c62828; }
         .status { font-size: 0.75rem; margin-bottom: 8px; }
         .status.connected { color: #2e7d32; }
         .status.disconnected { color: #c62828; }
@@ -43,11 +33,11 @@ class TaskJsonrpc extends LitElement {
         try { this._tasks = await TaskJsonRpc.tasks(); } catch (e) { console.error('JSON-RPC:', e); }
     }
 
-    async _add(e) {
-        const input = e.target.closest('.add-form').querySelector('input');
-        if (!input.value.trim()) return;
-        await TaskJsonRpc.addTask({title: input.value.trim()});
-        input.value = '';
+    async _add() {
+        const field = this.renderRoot.querySelector('vaadin-text-field');
+        if (!field.value.trim()) return;
+        await TaskJsonRpc.addTask({title: field.value.trim()});
+        field.value = '';
         this._load();
     }
 
@@ -59,20 +49,22 @@ class TaskJsonrpc extends LitElement {
             <div class="status ${this._connected ? 'connected' : 'disconnected'}">
                 WebSocket: ${this._connected ? 'Connected' : 'Connecting...'}
             </div>
-            <div class="add-form">
-                <input placeholder="New task..." ?disabled=${!this._connected}
-                       @keyup=${e => e.key === 'Enter' && this._add(e)}>
-                <button class="btn-add" ?disabled=${!this._connected}
-                        @click=${e => this._add(e)}>Add</button>
+            <div style="display:flex;gap:8px;margin-bottom:12px">
+                <vaadin-text-field placeholder="New task..." style="flex:1" ?disabled=${!this._connected}
+                    @keydown=${e => e.key === 'Enter' && this._add()}></vaadin-text-field>
+                <vaadin-button theme="primary" ?disabled=${!this._connected}
+                    @click=${() => this._add()}>Add</vaadin-button>
             </div>
-            <ul class="task-list">
-                ${this._tasks.map(t => html`
-                    <li class="task-item ${t.completed ? 'completed' : ''}">
-                        <span class="task-title" @click=${() => this._toggle(t.id)}>${t.title}</span>
-                        <button class="btn-delete" @click=${() => this._delete(t.id)}>x</button>
-                    </li>
-                `)}
-            </ul>
+            ${this._tasks.map(t => html`
+                <div style="display:flex;align-items:center;padding:4px 0;border-bottom:1px solid #eee">
+                    <vaadin-checkbox ?checked=${t.completed}
+                        @change=${() => this._toggle(t.id)}></vaadin-checkbox>
+                    <span style="flex:1;${t.completed ? 'text-decoration:line-through;color:#999' : ''}">${t.title}</span>
+                    <vaadin-button theme="icon tertiary error" @click=${() => this._delete(t.id)}>
+                        <vaadin-icon icon="vaadin:close-small"></vaadin-icon>
+                    </vaadin-button>
+                </div>
+            `)}
         `;
     }
 }
