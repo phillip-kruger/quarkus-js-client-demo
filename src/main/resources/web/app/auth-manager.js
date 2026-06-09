@@ -44,8 +44,8 @@ class AuthManager extends LitElement {
                 clientId: config.clientId,
             });
             await this._keycloak.init({ onLoad: 'check-sso', checkLoginIframe: false });
-            this._updateState();
             this._wireClients();
+            this._updateState();
             this._ready = true;
         } catch (e) {
             console.error('Auth init failed:', e);
@@ -105,7 +105,7 @@ class AuthManager extends LitElement {
                     <vaadin-button theme="primary" @click=${() => this._login()}>Login with Keycloak</vaadin-button>
                 `}
             </div>
-            <slot></slot>
+            ${this._authenticated ? html`<slot></slot>` : ''}
         `;
     }
 }
