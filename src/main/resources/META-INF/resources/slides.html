@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quarkus JS Client Generation</title>
+    <link rel="stylesheet" href="/_static/reveal.js/dist/reveal.css">
+    <link rel="stylesheet" href="/_static/reveal.js/dist/theme/white.css">
+    <script src="/_importmap/generated_importmap.js"></script>
+    <style>
+        .reveal { font-size: 28px; }
+        .reveal h1 { font-size: 2em; color: #0d47a1; }
+        .reveal h2 { font-size: 1.5em; color: #0d47a1; }
+        .reveal h3 { font-size: 1.1em; color: #333; }
+        .reveal pre { font-size: 0.55em; width: 100%; box-shadow: none; }
+        .reveal pre code { padding: 12px; border-radius: 6px; max-height: 500px; }
+        .reveal .small-code pre { font-size: 0.50em; }
+        .side-by-side { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; text-align: left; }
+        .side-by-side > div { background: #f8f9fa; border-radius: 8px; padding: 12px; }
+        .label { font-size: 0.6em; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+        .label.java { color: #e65100; }
+        .label.js { color: #1565c0; }
+        .badge { display: inline-block; font-size: 0.45em; padding: 3px 10px; border-radius: 12px; font-weight: 600; text-transform: uppercase; vertical-align: middle; margin-left: 8px; }
+        .badge.rest { background: #e8f5e9; color: #2e7d32; }
+        .badge.graphql { background: #e3f2fd; color: #1565c0; }
+        .badge.rpc { background: #f3e5f5; color: #7b1fa2; }
+        .diagram { background: #f8f9fa; border-radius: 8px; padding: 20px; text-align: left; font-family: monospace; font-size: 0.7em; line-height: 1.8; }
+        .diagram .arrow { color: #c62828; font-weight: bold; }
+        .diagram .highlight { color: #1565c0; font-weight: bold; }
+        .diagram .manual { color: #c62828; }
+        .diagram .auto { color: #2e7d32; }
+        .live-demo { border: 2px solid #e0e0e0; border-radius: 8px; padding: 16px; margin-top: 12px; background: white; text-align: left; }
+        .live-demo-label { font-size: 0.5em; color: #999; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+        .strike { text-decoration: line-through; color: #999; }
+        .green { color: #2e7d32; }
+        .red { color: #c62828; }
+    </style>
+</head>
+<body>
+    <div class="reveal">
+        <div class="slides">
+
+            <!-- Title -->
+            <section>
+                <h1>Quarkus JS Client Generation</h1>
+                <p>Auto-generated typed JavaScript clients for REST, GraphQL, and JSON-RPC</p>
+                <p style="font-size:0.6em;color:#666">Import maps + Web Dependency Locator + build-time code generation</p>
+            </section>
+
+            <!-- The Problem -->
+            <section>
+                <h2>The Problem</h2>
+                <p>Calling backend APIs from JavaScript requires a lot of manual wiring</p>
+                <p style="font-size:0.7em;color:#666">Different protocols, different patterns, easy to get wrong</p>
+            </section>
+
+            <!-- REST without generation -->
+            <section>
+                <h2>REST <span class="badge rest">without generation</span></h2>
+                <div class="diagram">
+                    <span class="manual">1. Know the URL path:</span> /api/tasks/{id}<br>
+                    <span class="manual">2. Know the HTTP method:</span> GET / POST / PUT / DELETE<br>
+                    <span class="manual">3. Set headers:</span> Content-Type, Accept, Authorization<br>
+                    <span class="manual">4. Build request body:</span> JSON.stringify({title: '...'})<br>
+                    <span class="manual">5. Handle path params:</span> replace {id} manually<br>
+                    <span class="manual">6. Handle query params:</span> build URLSearchParams<br>
+                    <span class="manual">7. Parse response:</span> await resp.json()<br>
+                    <span class="manual">8. Handle errors:</span> check resp.ok, parse error body<br>
+                </div>
+                <pre><code class="language-javascript">// What you write today
+const resp = await fetch('/api/tasks', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json',
+               'Accept': 'application/json' },
+    body: JSON.stringify({ title: 'My task' })
+});
+if (!resp.ok) throw new Error(resp.statusText);
+const task = await resp.json();</code></pre>
+            </section>
+
+            <!-- GraphQL without generation -->
+            <section>
+                <h2>GraphQL <span class="badge graphql">without generation</span></h2>
+                <div class="diagram">
+                    <span class="manual">1. Write the query string:</span> query { tasks { id title completed } }<br>
+                    <span class="manual">2. Know the schema types:</span> String, BigInteger, [Task]<br>
+                    <span class="manual">3. Declare variables:</span> $title: String!<br>
+                    <span class="manual">4. Build selection set:</span> which fields to return?<br>
+                    <span class="manual">5. POST to endpoint:</span> { query: '...', variables: {...} }<br>
+                    <span class="manual">6. Unwrap response:</span> response.data.tasks<br>
+                    <span class="manual">7. Handle errors array:</span> response.errors[].message<br>
+                    <span class="manual">8. Subscriptions:</span> implement graphql-transport-ws protocol<br>
+                </div>
+                <pre><code class="language-javascript">// What you write today
+const resp = await fetch('/graphql', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+        query: `mutation addTask($title: String) {
+            addTask(title: $title) { id title completed }
+        }`,
+        variables: { title: 'My task' }
+    })
+});
+const { data, errors } = await resp.json();
+if (errors) throw new Error(errors[0].message);</code></pre>
+            </section>
+
+            <!-- JSON-RPC without generation -->
+            <section>
+                <h2>JSON-RPC <span class="badge rpc">without generation</span></h2>
+                <div class="diagram">
+                    <span class="manual">1. Open WebSocket:</span> new WebSocket(url)<br>
+                    <span class="manual">2. Implement JSON-RPC 2.0:</span> { jsonrpc: "2.0", method, params, id }<br>
+                    <span class="manual">3. Track request IDs:</span> match responses to requests<br>
+                    <span class="manual">4. Handle errors:</span> { code: -32000, message: '...' }<br>
+                    <span class="manual">5. Subscriptions:</span> track subscription IDs<br>
+                    <span class="manual">6. Notifications:</span> method: "subscription" messages<br>
+                    <span class="manual">7. Reconnection:</span> exponential backoff logic<br>
+                    <span class="manual">8. Auth:</span> Sec-WebSocket-Protocol encoding<br>
+                </div>
+                <pre><code class="language-javascript">// What you write today
+const ws = new WebSocket('ws://localhost:8080/quarkus/json-rpc');
+let id = 0;
+const pending = new Map();
+ws.onmessage = (e) => {
+    const msg = JSON.parse(e.data);
+    if (msg.id && pending.has(msg.id)) {
+        pending.get(msg.id).resolve(msg.result);
+        pending.delete(msg.id);
+    }
+};
+function call(method, params) {
+    return new Promise((resolve, reject) => {
+        const reqId = ++id;
+        pending.set(reqId, { resolve, reject });
+        ws.send(JSON.stringify({ jsonrpc: '2.0', method, params, id: reqId }));
+    });
+}</code></pre>
+            </section>
+
+            <!-- The Solution -->
+            <section>
+                <h2>The Solution</h2>
+                <p>Enable one config property. Get a typed JS client.</p>
+                <pre><code class="language-properties"># application.properties
+quarkus.smallrye-openapi.js-client.enabled=true
+quarkus.smallrye-graphql.js-client.enabled=true
+quarkus.json-rpc.js-client.enabled=true</code></pre>
+                <p style="font-size:0.7em;color:#666">The extension scans your endpoints at build time and generates typed JavaScript modules,<br>served via import maps through Web Dependency Locator</p>
+            </section>
+
+            <!-- How it works -->
+            <section>
+                <h2>How It Works</h2>
+                <div class="diagram" style="font-size:0.65em;">
+                    <span class="highlight">Build Time:</span><br>
+                    &nbsp;&nbsp;Java endpoints <span class="arrow">&rarr;</span> scan annotations / schema<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;<span class="arrow">&rarr;</span> generate <span class="auto">graphql-client.js</span> / <span class="auto">rest-client.js</span> / <span class="auto">jsonrpc-client.js</span><br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;<span class="arrow">&rarr;</span> generate <span class="auto">typed proxy</span> (graphql-api.js / rest-api.js / jsonrpc-api.js)<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;<span class="arrow">&rarr;</span> produce <span class="auto">WebDependencyJarBuildItem</span> with import mappings<br>
+                    <br>
+                    <span class="highlight">Runtime:</span><br>
+                    &nbsp;&nbsp;HTML page loads <span class="arrow">&rarr;</span> {#bundle /} injects importmap script<br>
+                    &nbsp;&nbsp;Browser resolves <span class="auto">@quarkus/rest-api</span> <span class="arrow">&rarr;</span> /_static/quarkus-rest-api/rest-api.js<br>
+                    &nbsp;&nbsp;Your code: <span class="auto">import { TaskResource } from '@quarkus/rest-api'</span><br>
+                </div>
+            </section>
+
+            <!-- REST with generation -->
+            <section>
+                <h2>REST <span class="badge rest">with generation</span></h2>
+                <div class="side-by-side small-code">
+                    <div>
+                        <div class="label java">Server (Java)</div>
+                        <pre><code class="language-java">@Path("/api/tasks")
+public class TaskResource {
+
+    @GET
+    public List&lt;Task&gt; list() {
+        return taskService.getAllTasks();
+    }
+
+    @POST
+    public Task create(Task task) {
+        return taskService.addTask(task.getTitle());
+    }
+
+    @DELETE
+    @Path("/{id}")
+    public boolean delete(@PathParam("id") long id) {
+        return taskService.deleteTask(id);
+    }
+}</code></pre>
+                    </div>
+                    <div>
+                        <div class="label js">Client (JavaScript)</div>
+                        <pre><code class="language-javascript">import { TaskResource }
+    from '@quarkus/rest-api';
+
+// List tasks
+const tasks = await TaskResource
+    .getApiTasks();
+
+// Create a task
+const task = await TaskResource
+    .postApiTasks({ title: 'New task' });
+
+// Delete a task
+await TaskResource
+    .deleteApiTasksId({ id: 42 });</code></pre>
+                    </div>
+                </div>
+                <div class="live-demo">
+                    <div class="live-demo-label">Live Demo</div>
+                    <task-rest></task-rest>
+                </div>
+            </section>
+
+            <!-- GraphQL with generation -->
+            <section>
+                <h2>GraphQL <span class="badge graphql">with generation</span></h2>
+                <div class="side-by-side small-code">
+                    <div>
+                        <div class="label java">Server (Java)</div>
+                        <pre><code class="language-java">@GraphQLApi
+public class TaskGraphQL {
+
+    @Query
+    public List&lt;Task&gt; tasks() {
+        return taskService.getAllTasks();
+    }
+
+    @Mutation
+    public Task addTask(String title) {
+        return taskService.addTask(title);
+    }
+
+    @Mutation
+    public boolean deleteTask(long id) {
+        return taskService.deleteTask(id);
+    }
+}</code></pre>
+                    </div>
+                    <div>
+                        <div class="label js">Client (JavaScript)</div>
+                        <pre><code class="language-javascript">import { Queries, Mutations }
+    from '@quarkus/graphql-api';
+
+// Query tasks
+const data = await Queries.tasks();
+const tasks = data.tasks;
+
+// Mutate - add a task
+const result = await Mutations
+    .addTask({ title: 'New task' });
+
+// Mutate - delete a task
+await Mutations
+    .deleteTask({ id: 42 });</code></pre>
+                    </div>
+                </div>
+                <div class="live-demo">
+                    <div class="live-demo-label">Live Demo</div>
+                    <task-graphql></task-graphql>
+                </div>
+            </section>
+
+            <!-- JSON-RPC with generation -->
+            <section>
+                <h2>JSON-RPC <span class="badge rpc">with generation</span></h2>
+                <div class="side-by-side small-code">
+                    <div>
+                        <div class="label java">Server (Java)</div>
+                        <pre><code class="language-java">@JsonRPCApi
+public class TaskJsonRpc {
+
+    public List&lt;Task&gt; tasks() {
+        return taskService.getAllTasks();
+    }
+
+    public Task addTask(String title) {
+        return taskService.addTask(title);
+    }
+
+    public boolean deleteTask(long id) {
+        return taskService.deleteTask(id);
+    }
+}</code></pre>
+                    </div>
+                    <div>
+                        <div class="label js">Client (JavaScript)</div>
+                        <pre><code class="language-javascript">import { TaskJsonRpc }
+    from '@quarkiverse/json-rpc-api';
+
+// Call over WebSocket
+const tasks = await TaskJsonRpc
+    .tasks();
+
+// Add a task
+const task = await TaskJsonRpc
+    .addTask({ title: 'New task' });
+
+// Delete a task
+await TaskJsonRpc
+    .deleteTask({ id: 42 });</code></pre>
+                    </div>
+                </div>
+                <div class="live-demo">
+                    <div class="live-demo-label">Live Demo</div>
+                    <task-jsonrpc></task-jsonrpc>
+                </div>
+            </section>
+
+            <!-- All together -->
+            <section>
+                <h2>All Together</h2>
+                <p style="font-size:0.7em;color:#666">Same backend data, three protocols, three generated clients</p>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;text-align:left">
+                    <div class="live-demo">
+                        <div class="live-demo-label">REST</div>
+                        <task-rest></task-rest>
+                    </div>
+                    <div class="live-demo">
+                        <div class="live-demo-label">GraphQL</div>
+                        <task-graphql></task-graphql>
+                    </div>
+                    <div class="live-demo">
+                        <div class="live-demo-label">JSON-RPC</div>
+                        <task-jsonrpc></task-jsonrpc>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Security -->
+            <section>
+                <h2>Security</h2>
+                <p>All three clients support <code>token</code> and <code>tokenProvider</code></p>
+                <pre><code class="language-javascript">import { RestClient } from '@quarkus/rest';
+import { GraphQLClient } from '@quarkus/graphql';
+import { JsonRPCClient } from '@quarkiverse/json-rpc';
+
+// Static token
+RestClient.configure({ token: 'Bearer my-jwt' });
+
+// Dynamic token (e.g. with Keycloak)
+GraphQLClient.configure({
+    tokenProvider: async () => {
+        await keycloak.updateToken(30);
+        return 'Bearer ' + keycloak.token;
+    }
+});
+
+// Works the same for all three
+JsonRPCClient.configure({ token: 'Bearer my-jwt' });</code></pre>
+            </section>
+
+            <!-- Summary -->
+            <section>
+                <h2>Summary</h2>
+                <table style="font-size:0.7em;margin:0 auto">
+                    <thead>
+                        <tr><th>Protocol</th><th>Config</th><th>Import</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>REST</td>
+                            <td><code>quarkus.smallrye-openapi.js-client.enabled=true</code></td>
+                            <td><code>@quarkus/rest-api</code></td>
+                        </tr>
+                        <tr>
+                            <td>GraphQL</td>
+                            <td><code>quarkus.smallrye-graphql.js-client.enabled=true</code></td>
+                            <td><code>@quarkus/graphql-api</code></td>
+                        </tr>
+                        <tr>
+                            <td>JSON-RPC</td>
+                            <td><code>quarkus.json-rpc.js-client.enabled=true</code></td>
+                            <td><code>@quarkiverse/json-rpc-api</code></td>
+                        </tr>
+                    </tbody>
+                </table>
+                <p style="margin-top:24px;font-size:0.7em">
+                    Write your Java endpoints. Enable one property. Import the generated client.<br>
+                    No manual fetch, no query strings, no protocol wiring.
+                </p>
+            </section>
+
+        </div>
+    </div>
+
+    <script type="module">
+        import './app/task-rest.js';
+        import './app/task-graphql.js';
+        import './app/task-jsonrpc.js';
+        import Reveal from 'reveal.js';
+
+        Reveal.initialize({
+            hash: true,
+            width: 1280,
+            height: 720,
+            margin: 0.04,
+            controls: true,
+            progress: true,
+        });
+    </script>
+</body>
+</html>
