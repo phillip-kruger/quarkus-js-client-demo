@@ -51,6 +51,10 @@
             <artifactId>quarkus-arc</artifactId>
         </dependency>
         <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-oidc</artifactId>
+        </dependency>
+        <dependency>
             <groupId>io.quarkiverse.json-rpc</groupId>
             <artifactId>quarkus-json-rpc</artifactId>
             <version>999-SNAPSHOT</version>
@@ -69,6 +73,11 @@
             <groupId>org.mvnpm</groupId>
             <artifactId>reveal.js</artifactId>
             <version>6.0.1</version>
+        </dependency>
+        <dependency>
+            <groupId>org.mvnpm</groupId>
+            <artifactId>keycloak-js</artifactId>
+            <version>26.2.4</version>
         </dependency>
         <dependency>
             <groupId>io.quarkus</groupId>
