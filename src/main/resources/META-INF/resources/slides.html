@@ -153,11 +153,13 @@ quarkus.json-rpc.js-client.enabled=true</code></pre>
             <!-- How it works -->
             <section>
                 <h2>How It Works</h2>
-                <div class="diagram" style="font-size:0.65em;">
+                <div class="diagram" style="font-size:0.60em;">
                     <span class="highlight">Build Time:</span><br>
-                    &nbsp;&nbsp;Java endpoints <span class="arrow">&rarr;</span> scan annotations / schema<br>
-                    &nbsp;&nbsp;&nbsp;&nbsp;<span class="arrow">&rarr;</span> generate <span class="auto">graphql-client.js</span> / <span class="auto">rest-client.js</span> / <span class="auto">jsonrpc-client.js</span><br>
-                    &nbsp;&nbsp;&nbsp;&nbsp;<span class="arrow">&rarr;</span> generate <span class="auto">typed proxy</span> (graphql-api.js / rest-api.js / jsonrpc-api.js)<br>
+                    &nbsp;&nbsp;Java endpoints <span class="arrow">&rarr;</span> scan annotations / OpenAPI schema / GraphQL schema<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;<span class="arrow">&rarr;</span> generate <span class="auto">base client</span> (rest-client.js / graphql-client.js / jsonrpc-client.js)<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;<span class="arrow">&rarr;</span> generate <span class="auto">typed proxy</span> with parameter types, content negotiation, query strings<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;<span class="arrow">&rarr;</span> extract <span class="auto">@PathParam, @QueryParam, @HeaderParam, @CookieParam</span> from OpenAPI<br>
+                    &nbsp;&nbsp;&nbsp;&nbsp;<span class="arrow">&rarr;</span> extract <span class="auto">@Produces / @Consumes</span> for per-operation Accept / Content-Type<br>
                     &nbsp;&nbsp;&nbsp;&nbsp;<span class="arrow">&rarr;</span> produce <span class="auto">WebDependencyJarBuildItem</span> with import mappings<br>
                     <br>
                     <span class="highlight">Runtime:</span><br>
@@ -198,17 +200,18 @@ public class TaskResource {
                         <pre><code class="language-javascript">import { TaskResource }
     from '@quarkus/rest-api';
 
-// List tasks
+// List tasks (GET /api/tasks)
 const tasks = await TaskResource
     .getApiTasks();
 
-// Create a task
+// Create a task (POST /api/tasks)
 const task = await TaskResource
-    .postApiTasks({ title: 'New task' });
+    .postApiTasks({ body: { title: 'New' } });
 
-// Delete a task
+// Delete (path param extracted)
 await TaskResource
-    .deleteApiTasksId({ id: 42 });</code></pre>
+    .deleteApiTasksId({ id: 42 });
+// → DELETE /api/tasks/42</code></pre>
                     </div>
                 </div>
                 <div class="live-demo">

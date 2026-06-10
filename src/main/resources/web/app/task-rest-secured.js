@@ -29,7 +29,7 @@ class TaskRestSecured extends LitElement {
     async _add() {
         const field = this.renderRoot.querySelector('vaadin-text-field');
         if (!field.value.trim()) return;
-        try { await SecuredTaskResource.postApiSecuredTasks({title: field.value.trim()}); field.value = ''; }
+        try { await SecuredTaskResource.postApiSecuredTasks({body: {title: field.value.trim()}}); field.value = ''; }
         catch (e) { this._error = e.message || 'Unauthorized'; }
         this._load();
     }

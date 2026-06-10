@@ -20,12 +20,12 @@ class TaskRest extends LitElement {
     async _add() {
         const field = this.renderRoot.querySelector('vaadin-text-field');
         if (!field.value.trim()) return;
-        await TaskResource.postApiTasks({title: field.value.trim()});
+        await TaskResource.postApiTasks({body: {title: field.value.trim()}});
         field.value = '';
         this._load();
     }
 
-    async _toggle(id) { await TaskResource.putApiTasksIdToggle({}, {id}); this._load(); }
+    async _toggle(id) { await TaskResource.putApiTasksIdToggle({id}); this._load(); }
     async _delete(id) { await TaskResource.deleteApiTasksId({id}); this._load(); }
 
     render() {
